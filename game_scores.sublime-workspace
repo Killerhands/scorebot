@@ -1,0 +1,348 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"reha",
+				"command_rehash"
+			],
+			[
+				"return",
+				"returnNextGame"
+			],
+			[
+				"Games",
+				"Games"
+			],
+			[
+				"hTeam",
+				"hTeam"
+			],
+			[
+				"NFL",
+				"NFLGameArray"
+			],
+			[
+				"l",
+				"liveGames"
+			],
+			[
+				"get",
+				"getAwayTeam"
+			],
+			[
+				"NHLG",
+				"NHLGameArray"
+			],
+			[
+				"game",
+				"gameJson"
+			],
+			[
+				"post",
+				"postponedMatches"
+			],
+			[
+				"broadcast",
+				"broadcastMsg"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "bot.py",
+			"settings":
+			{
+				"buffer_size": 4773,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "actions.py",
+			"settings":
+			{
+				"buffer_size": 18261,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"contents": "import json\nfrom urllib2 import urlopen\n\nNHLGameArray = []\nNBAGameArray = []\nNFLGameArray = []\n\nGames = []\nliveGames = []\n\nclass Game:\n	def __init__(self, sport, gameID, hTeam, aTeam, sHome, sAway, status, startTime, dayOfWeek, winner):\n		self.sport = sport\n		self.id = gameID\n		self.homeTeam = hTeam\n		self.awayTeam = aTeam\n		self.sHome = sHome\n		self.sAway = sAway\n		self.status = status\n		self.startTime = startTime\n		self.dayOfWeek = dayOfWeek\n		self.winner = winner\n\n		if self.status == 'final overtime':\n			self.status = 'FINAL OT'\n\n	def getHomeTeam(self):\n		return self.homeTeam\n\n	def getAwayTeam(self):\n		return self.awayTeam\n\n	def getWinner(self):\n		return self.winner\n\n	def getStatus(self):\n		return self.status\n\n	def getSport(self):\n		return self.sport\n\n	def test(self):\n		self.sport\n\n\n\n#Return games currently being played\ndef GetLiveGames():\n	global Games\n	global liveGames\n\n	liveGames = []\n	for game in Games:\n		if 'LIVE' in game.status:\n			liveGames.append(game)\n\n	return liveGames\n\n\n#Return\ndef postLiveGameStatus(sport='ALL'):\n	GetLiveGames()\n	global liveGames\n\n	liveGameStr = 'Live Games: '\n\n	if sport == 'ALL':\n		for game in liveGames:\n			liveGameStr += '[%s] %s %s-%s %s ' % (game.sport, game.homeTeam, game.sHome, game.sAway, game.awayTeam)\n	elif sport == 'NHL':\n		for game in liveGames:\n			if game.sport == 'NHL':\n				liveGameStr += '[%s] %s %s-%s %s ' % (game.sport, game.homeTeam, game.sHome, game.sAway, game.awayTeam)\n	elif sport == 'NFL':\n		for game in liveGames:\n			if game.sport == 'NFL':\n				liveGameStr += '[%s] %s %s-%s %s ' % (game.sport, game.homeTeam,game.sHome, game.sAway, game.awayTeam)\n\n	print liveGameStr\n\n\n\ndef getNHLScores():\n	global NHLGameArray\n	NHLFeed = urlopen('http://live.nhle.com/GameData/RegularSeasonScoreboardv3.jsonp')\n	#Parse into Json\n	gameStr = NHLFeed.read()\n	gameJson = gameStr.strip('loadScoreboard(')\n	gameJson = gameJson[:-1]\n	gameJson = json.loads(gameJson)\n\n	for game in gameJson['games']:\n		htWin = game['htc']\n		atWin = game['atc']\n		gameStatus = game['bs']\n\n		if 'FINAL' in gameStatus.upper():\n			if htWin == '':\n				winner = game['htv']\n			else:\n				winner = game['atv']\n		newGame = Game(\n			sport = 'NHL',\n			gameID = game['id'], \n			hTeam = game['htv'], \n			aTeam = game['atv'],\n			sHome = game['hts'],\n			sAway = game['ats'],\n			status = game['bs'],\n			startTime = game['bs'],\n			dayOfWeek = game['ts'],\n			winner = winner,\n			 )\n\n		Games.append(newGame)\n		NHLGameArray.append(newGame)\n	return NHLGameArray\n\n\ndef getNFLScores():\n	global NFLGameArray\n	NFLFeed = urlopen('http://www.nfl.com/liveupdate/scorestrip/scorestrip.json')\n	#Parse into Json\n	gameStr = NFLFeed.read()\n	gameJson = gameStr.split('[')\n	gameJson.pop(0)\n	gameJson.pop(0)\n\n	for game in gameJson:\n		game = game.split(',')\n		#for stuff in game:\n	#		stuff = stuff.strip('\"')\n			#print stuff\n		#print game\n\n	for game in gameJson:\n		game = game.split(',')\n		hTeam = game[4].strip('\"')\n		aTeam = game[6].strip('\"')\n		sHome = game[5].strip('\"')\n		sAway = game[7].strip('\"')\n\n		if sHome == '':\n			sHome = 0\n		if sAway == '':\n			sAway = 0\n\n\n		if sHome > sAway:\n			winner = hTeam\n		elif sHome < sAway:\n			winner = aTeam\n		else:\n			winner = 'N/A'\n		newGame = Game(\n			sport = 'NFL',\n			gameID = 0, \n			hTeam = hTeam, \n			aTeam = aTeam,\n			sHome = sHome,\n			sAway = sAway,\n			status = game[2].strip('\"') + ' ' + game[3].strip('\"'),\n			startTime = game[2].strip('\"'),\n			dayOfWeek = game[0].strip('\"'),\n			winner = winner,\n			 )\n\n		Games.append(newGame)\n\n		NFLGameArray.append(newGame)\n\n#	for game in Games:\n#		if game.sport == 'NFL':\n#			print '[NFL] - %s %s-%s %s' % (game.homeTeam, game.sHome, game.sAway, game.awayTeam)\n	return NFLGameArray\n\n\n\n\n\ndef postGameScores(sport):\n	global Games\n	currentGame = sport\n\n	for game in Games:\n		if game.sport == currentGame:\n			hTeam = game.getHomeTeam()\n			aTeam = game.getAwayTeam()\n			gWinner = game.getWinner()\n			if 'FINAL' in game.status.upper():\n				print '[%s] %s %s-%s %s' % (game.sport, game.homeTeam, game.sHome, game.sAway, game.awayTeam)\n			else:\n				if 'LIVE' in game.status:\n					print '[%s] %s %s-%s %s | Game Status: %s' % (game.sport, hTeam, aTeam, game.sHome, game.sAway, game.status)\n				else:\n					print '[%s] %s %s-%s %s | Game Status: %s' % (game.sport, hTeam, game.sHome, game.sAway, aTeam, game.status)\n\n\n#NHLGames = getNHLScores()\n\n#for game in NHLGames:\n#	show = True\n#	hTeam = game.getHomeTeam()\n#	aTeam = game.getAwayTeam()\n#	gWinner = game.getWinner()\n#	if 'FINAL' in game.status:\n#		print '[%s] %s %s-%s %s' % (game.sport, hTeam, game.sHome, game.sAway, aTeam)\n#	else:\n#		if 'LIVE' in game.status:\n#			print '[%s] %s %s-%s %s | Game Status: %s' % (game.sport, hTeam, game.sHome, game.sAway, aTeam, game.status)\n#		else:\n#			print '[%s] %s 0-0 %s | Game Status: %s' % (game.sport, hTeam, aTeam, game.status)\n\n\n\ndef returnGameStatus(TeamA, TeamB):\n	global Games\n	gameFound = None\n	teamOne = TeamA.upper()\n	teamTwo = TeamB.upper()\n	for game in Games:\n		if game.homeTeam.upper() == teamOne and game.awayTeam.upper() == teamTwo:\n			gameFound = game\n			break\n		if game.homeTeam.upper() == teamTwo and game.awayTeam.upper() == teamOne:\n			gameFound = game\n			break\n\n	if gameFound is None:\n		print \"No Game Found!\"\n	else:\n		print '[%s] %s %s-%s %s [%s]' % (gameFound.sport, gameFound.homeTeam, gameFound.sHome, gameFound.sAway, gameFound.awayTeam, gameFound.status)\n		return game\n\n\n\n#GetLiveGames()\n\n\ngetNHLScores()\ngetNFLScores()\npostGameScores('NHL')\npostLiveGameStatus()\n\nreturnGameStatus('penguins', 'senators')",
+			"file": "main.py",
+			"file_size": 5712,
+			"file_write_time": 130624793403774632,
+			"settings":
+			{
+				"buffer_size": 5502,
+				"line_ending": "Windows",
+				"name": "import json"
+			}
+		}
+	],
+	"build_system": "",
+	"command_palette":
+	{
+		"height": 81.0,
+		"selected_items":
+		[
+			[
+				"install",
+				"Package Control: Install Package"
+			]
+		],
+		"width": 400.0
+	},
+	"console":
+	{
+		"height": 126.0,
+		"history":
+		[
+			"install anaconda",
+			"import urllib.request,os,hashlib; h = 'eb2297e1a458f27d836c04bb0cbaf282' + 'd0e7a3098092775ccb37ca9d6b2e4b7d'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://packagecontrol.io/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by)"
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/C/python/scores"
+	],
+	"file_history":
+	[
+		"/C/Users/Michael/AppData/Roaming/Sublime Text 3/Packages/User/Python.sublime-settings",
+		"/C/Users/Michael/AppData/Roaming/Sublime Text 3/Packages/User/Package Control.sublime-settings",
+		"/C/Users/Michael/AppData/Roaming/Sublime Text 3/Packages/User/Anaconda.sublime-settings",
+		"/C/Users/Michael/AppData/Roaming/Sublime Text 3/Packages/Anaconda/Anaconda.sublime-settings",
+		"/C/JerkBot/JerkBot.sublime-project",
+		"/C/JerkBot/bot.py",
+		"/C/JerkBot/stats.py",
+		"/C/JerkBot/actions.py"
+	],
+	"find":
+	{
+		"height": 34.0
+	},
+	"find_in_files":
+	{
+		"height": 90.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"bracket",
+			"later",
+			"remove",
+			"password",
+			"ver",
+			"!ver",
+			"leaderboard",
+			"bracket",
+			"websiteban",
+			"casters",
+			"registerround()",
+			"registerRound()"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 1,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "bot.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 4773,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								939,
+								939
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "actions.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 18261,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								11079,
+								11079
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "main.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 5502,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								257,
+								257
+							]
+						],
+						"settings":
+						{
+							"auto_name": "import json",
+							"syntax": "Packages/Python/Python.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 0.0
+	},
+	"input":
+	{
+		"height": 0.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"project": "game_scores.sublime-project",
+	"replace":
+	{
+		"height": 0.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 500.0,
+		"selected_items":
+		[
+		],
+		"width": 380.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 150.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}
