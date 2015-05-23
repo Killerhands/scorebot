@@ -164,7 +164,12 @@ NFLTeams = {
 
 
 NHLTeams = {
+    #Still need to setup aliases for NHL teams like with NFL Teams
     
+}
+
+NBA Teams = {
+
 }
 class timeBank:
     prevTime = float(0.0)
@@ -246,7 +251,7 @@ class Game:
 
     def __cmp__(self, other):
                 if self.homeTeam == other.homeTeam and self.awayTeam == other.awayTeam:
-					return True
+                    return True
                 return False
 
     def __repr__(self):
@@ -398,11 +403,6 @@ def getNHLScores():
     print 'NHL Scores Updated!'
                 
 
-        #NHLGameArray.append(newGame)
-
-    
-    #return NHLGameArray
-
 def getNFLScores():
     global Games
     for game in Games:
@@ -418,10 +418,6 @@ def getNFLScores():
 
     for game in gameJson:
         game = game.split(',')
-        #for stuff in game:
-    #       stuff = stuff.strip('"')
-            #print stuff
-        #print game
 
     for game in gameJson:
         game = game.split(',')
@@ -463,20 +459,15 @@ def getNFLScores():
 
         Games.append(newGame)
 
-        #NFLGameArray.append(newGame)
-
-    #for game in Games:
-    #    if game.sport == 'NFL':
-    #        print '[NFL] - %s %s-%s %s' % (game.homeTeam, game.sHome, game.sAway, game.awayTeam)
     return NFLGameArray
 
 
 
 def returnGameStatus(bot, chan, nick, msg):
+    #Still need to work on this
     global Games
     global NFLTeams
     global NHLTeams
-    print Games
 
     gameFound = None
     msg = msg.split(' ')
@@ -484,35 +475,32 @@ def returnGameStatus(bot, chan, nick, msg):
         bot.msg(chan, 'invalid arguments. Try \'!score <team> <team>\' or \'!score <team>\'')
 
     if len(msg) == 3:
-        teamOne = msg[1].lower()
+        sport = msg[1].lower()
+        print 'sport' % sport
+        teamOne = msg[2].lower()
         print 'teamOne %s' % teamOne
-        teamTwo = msg[2].lower()
-        print 'teamTwo %s' % teamTwo
 
-        if teamOne in NFLTeams:
+        if sport == 'nfl' and teamOne in NFLTeams:
             teamOne = NFLTeams[teamOne]
 
 
-        if teamTwo in NFLTeams:
-            teamTwo = NFLTeams[teamTwo]
+        if sport == 'nhl' and teamOne in NHLTeams:
+            teamOne = NHLTeams[teamOne]
 
-
-        #Still have to handle NHL teams
 
         for game in Games:
             if game.homeTeam.upper() == teamOne.upper() and game.awayTeam.upper() == teamTwo.upper():
                 gameFound = game
                 break
-            if game.homeTeam.upper() == teamTwo.upper() and game.awayTeam.upper() == teamOne.upper():
-                gameFound = game
-                break
 
     if len(msg) == 2:
-        teamOne = msg[1].lower()
+        teamOne = msg[2].lower()
         print 'teamOne %s' % teamOne
 
         if teamOne in NFLTeams:
             teamOne = NFLTeams[teamOne]
+        elif teamOne in NHLTeams:
+            teamOne = NHLTeams[teamOne]
 
         for game in Games:
             if game.homeTeam.upper() == teamOne.upper() or game.awayTeam.upper() == teamOne.upper():
