@@ -168,46 +168,9 @@ NHLTeams = {
     
 }
 
-NBA Teams = {
+NBATeams = {
 
 }
-class timeBank:
-    prevTime = float(0.0)
-
-
-def findAction(name):
-    name = findAction.pattern.sub('', name)
-    for action in actions:
-        if action.actionName == name:
-            return action
-    return None
-findAction.pattern = re.compile('[\W_]+')
-
-
-
-# Syntax: !cooldown <action> <time>
-def cooldown(bot, chan, nick, msg):
-    message = msg.strip().split(' ')
-    if len(message) < 3:
-        bot.msg(chan, '%s: Too few arguments.' % nick)
-        return
-    
-    action,time = message[1:3]
-    act = findAction(action)
-    
-    if not act:
-        bot.msg(chan, '%s: Unknown action: %s' % (nick,action))
-        return
-    try:
-        time = int(time)
-    except:
-        bot.msg(chan, '%s: Invalid time: %s', (nick, time))
-        return
-    
-    act.cooldown = time
-    bot.msg(chan, 'Cooldown set to %d seconds.' % time)
-
-
 
 
 NHLGameArray = []
@@ -217,8 +180,32 @@ NFLGameArray = []
 Games = []
 liveGames = []
 
+
+class timeBank:
+    prevTime = float(0.0)
+
+
+#Create City class that can contain games (for easy searching)
+class City():
+    def __init__(self, name, aliases):
+        self.name = name
+        self.aliases = aliases
+        self.games = []
+
+    def addGame(self, game):
+        self.games.append(game)
+
+    def removeGame(self, game):
+        for game in self.games:
+            self.games.remove(game)
+
+    def getAliases(self):
+        return self.aliases
+
+
+#Create Game class that has general game info that is standard across all leagues
 class Game:
-    def __init__(self, color, sport, gameID, hTeam, aTeam, sHome, sAway, status, startTime, dayOfWeek, winner):
+    def __init__(self, color, sport, gameID, hTeam, aTeam, sHome, sAway, status, startTime, dayOfWeek, winner, network = None):
         self.color = color
         self.sport = sport
         self.id = gameID
@@ -226,9 +213,10 @@ class Game:
         self.awayTeam = aTeam
         self.sHome = sHome
         self.sAway = sAway
-        self.status = status
-        self.startTime = startTime
+        self.status = status.upper()
+        self.startTime = startTime + ' EST'
         self.dayOfWeek = dayOfWeek
+        self.network = network
         self.winner = winner
 
         if self.status == 'final overtime':
@@ -250,12 +238,14 @@ class Game:
         return self.sport
 
     def __cmp__(self, other):
-                if self.homeTeam == other.homeTeam and self.awayTeam == other.awayTeam:
+                if self.id == other.id:
+                    #print 'COMPARE TRUE!'
                     return True
+                #print 'COMPARE FALSE!'
                 return False
 
     def __repr__(self):
-        return '[%s] %s %s-%s %s %s' % (self.sport, self.homeTeam, self.sHome, self.sAway, self.awayTeam, self.status)
+        return '[%s] %s %s-%s %s %s %s %s %s %s' % (self.sport, self.homeTeam, self.sHome, self.sAway, self.awayTeam, self.status, self.startTime, self.network, self.dayOfWeek, self.winner)
         
 
 
@@ -279,8 +269,8 @@ def GetLiveGames():
 
 #Return
 def postLiveGameStatus(bot, chan, nick, msg):
-    GetLiveGames()
-    global liveGames
+    liveGames = GetLiveGames()
+    #global liveGames
     msg = msg.split(' ')
     if len(msg) > 2:
         return
@@ -297,11 +287,11 @@ def postLiveGameStatus(bot, chan, nick, msg):
                 status = game.dayOfWeek
             else:
                 status = game.status
-            liveGameStr += '%s[%s] %s %s-%s %s %s ' % (game.color, game.sport, game.homeTeam, game.sHome, game.sAway, game.awayTeam, status)
+            liveGameStr += '%s[%s] %s %s-%s %s %s' % (game.color, game.sport, game.homeTeam, game.sHome, game.sAway, game.awayTeam, status)
     elif sport == 'NHL':
         for game in liveGames:
             if game.sport == 'NHL':
-                liveGameStr += '%s[%s] %s %s-%s %s %s ' % (game.color, game.sport, game.homeTeam, game.sHome, game.sAway, game.awayTeam, game.dayOfWeek)
+                liveGameStr += '%s[%s] %s %s-%s %s %s %s' % (game.color, game.sport, game.homeTeam, game.sHome, game.sAway, game.awayTeam, game.dayOfWeek, game.network)
     elif sport == 'NFL':
         for game in liveGames:
             if game.sport == 'NFL':
@@ -376,21 +366,34 @@ def getNHLScores():
             status = game['bs'],
             startTime = game['bs'],
             dayOfWeek = game['ts'],
+            network = game['ustv'],
             winner = winner,
              )
 
-        for game in Games:
-            if newGame == game:
-                if 'FINAL' in newGame.status.upper() and 'FINAL' not in game.status.upper():
+        #print newGame
+
+        for oldGame in Games:
+            #print 'IDs: %s vs %s' % (game.gameID, newGame.gameID)
+            if newGame == oldGame:
+                print 'GAME FOUND. REPLACING!'
+                print 'NewGame Status: %s' % newGame.status
+                print 'OldGame Status: %s' %oldGame.status
+                if 'FINAL' in newGame.status and not 'FINAL' in oldGame.status:
                     print 'GAME ENDED!'
-                    bot.msg(chan, '[GAME UPDATE!] %s[%s] %s %s-%s %s [%s]' % (newGame.color, newGame.sport, newGame.homeTeam, newGame.sHome, newGame.sAway, newGame.awayTeam, newGame.status))
-                    
-                Games.remove(game)
+                    #Need to still figure out how to pass the bot to this function to push to the channel the update
+                    #bot.msg(chan, '[GAME UPDATE!] %s[%s] %s %s-%s %s [%s %s]' % (newGame.color, newGame.sport, newGame.homeTeam, newGame.sHome, newGame.sAway, newGame.awayTeam, newGame.status, newGame.network))
+                
+                if not 'FINAL' in oldGame.status and 'LIVE' in newGame.status and not 'LIVE' in oldGame.status:
+                    print 'GAME STARTED!'
+                    #Need to still figure out how to pass the bot to this function to push to the channel the update
+                    #bot.msg(chan, '[GAME UPDATE!] %s[%s] %s %s-%s %s [%s %s]' % (newGame.color, newGame.sport, newGame.homeTeam, newGame.sHome, newGame.sAway, newGame.awayTeam, newGame.status, newGame.network))
+                 
+                Games.remove(oldGame)
                 newGames.append(newGame)
                 replaced = True
             else:
                 replaced = False
-                Games.remove(game)
+                Games.remove(oldGame)
                 
         if replaced == True:
             return
@@ -461,16 +464,26 @@ def getNFLScores():
 
     return NFLGameArray
 
-
+weekDay = [ 
+    'MONDAY',
+    'TUESDAY',
+    'WEDNESDAY',
+    'THURSDAY',
+    'FRIDAY',
+    'SATURDAY',
+    'SUNDAY',
+]
 
 def returnGameStatus(bot, chan, nick, msg):
     #Still need to work on this
     global Games
     global NFLTeams
     global NHLTeams
+    global weekDay
 
     gameFound = None
     msg = msg.split(' ')
+    print msg
     if len(msg) > 3:
         bot.msg(chan, 'invalid arguments. Try \'!score <team> <team>\' or \'!score <team>\'')
 
@@ -494,7 +507,7 @@ def returnGameStatus(bot, chan, nick, msg):
                 break
 
     if len(msg) == 2:
-        teamOne = msg[2].lower()
+        teamOne = msg[1].lower()
         print 'teamOne %s' % teamOne
 
         if teamOne in NFLTeams:
@@ -511,7 +524,7 @@ def returnGameStatus(bot, chan, nick, msg):
         print "No Game Found!"
     else:
         if gameFound.sport == 'NHL' and gameFound.status != 'FINAL':
-            gameString = '%s[%s] %s %s-%s %s [%s %s] ' % (gameFound.color, gameFound.sport, gameFound.homeTeam, gameFound.sHome, gameFound.sAway, gameFound.awayTeam, gameFound.dayOfWeek, gameFound.status)
+            gameString = '%s[%s] %s %s-%s %s [%s %s %s] ' % (gameFound.color, gameFound.sport, gameFound.homeTeam, gameFound.sHome, gameFound.sAway, gameFound.awayTeam, gameFound.dayOfWeek, gameFound.status, gameFound.network)
         else:
             if gameFound.sport == 'NFL' and 'pregame' in gameFound.status.lower():
                 gameString = '%s[%s] %s %s-%s %s [%s] ' % (gameFound.color, gameFound.sport, gameFound.homeTeam, gameFound.sHome, gameFound.sAway, gameFound.awayTeam, gameFound.dayOfWeek)
@@ -526,41 +539,33 @@ def returnNextGame(bot, chan, nick, msg):
     global Games
     nextGames = []
     gameString = ''
+    global weekDay
+    #print Games
 
     gameFound = None
     msg = msg.split(' ')
-    if len(msg) > 3:
-        bot.msg(chan, 'invalid arguments. Try \'!score <team> <team>\' or \'!score <team>\'')
+    if len(msg) > 2:
+        bot.msg(chan, 'invalid arguments. Try \'!score <team>\'')
 
-    if len(msg) == 3:
-        teamOne = msg[1].upper()
-        print 'teamOne %s' % teamOne
-        teamTwo = msg[2].upper()
-        print 'teamTwo %s' % teamTwo
-
-        for game in Games:
-            if game.homeTeam.upper() == teamOne and game.awayTeam.upper() == teamTwo:
-                gameFound = game
-                break
-            if game.homeTeam.upper() == teamTwo and game.awayTeam.upper() == teamOne:
-                gameFound = game
-                break
     if len(msg) == 2:
         teamOne = msg[1].upper()
         print 'teamOne %s' % teamOne
 
         for game in Games:
             if game.homeTeam.upper() == teamOne or game.awayTeam.upper() == teamOne:
-                nextGames.append(game)
-                break
+                if not 'FINAL' in game.status and not 'LIVE' in game.status:
+                    nextGames.append(game)
+                    #Only returning one game for now, might expand to more
+                    break
 
     if nextGames is None:
         print "No Game Found!"
     else:
         for gameFound in nextGames:
-            if gameFound.status != 'FINAL' and gameFound.status != 'LIVE':
-                gameString += '%s[%s] %s %s-%s %s [%s %s] ' % (gameFound.color, gameFound.sport, gameFound.homeTeam, gameFound.sHome, gameFound.sAway, gameFound.awayTeam, gameFound.dayOfWeek, gameFound.status)
-            print gameString
+            #print gameFound
+            #print gameFound.status
+            gameString += '%s[%s] %s %s-%s %s [%s %s %s] ' % (gameFound.color, gameFound.sport, gameFound.homeTeam, gameFound.sHome, gameFound.sAway, gameFound.awayTeam, gameFound.dayOfWeek, gameFound.status, gameFound.network)
+            #print gameString
         bot.msg(chan, str(gameString))
             
 
@@ -568,10 +573,10 @@ def returnNextGame(bot, chan, nick, msg):
 
 def updateAllScores():
     global Games
-    Games = []
+    #Games = []
     getNHLScores()
     #getNFLScores()
-    reactor.callLater(160, updateAllScores)
+    reactor.callLater(120, updateAllScores)
 
 updateAllScores()
 
@@ -581,9 +586,37 @@ def rehashCmd(bot, chan, nick, msg):
     bot.msg(chan, 'Rehash\'d')
 
 
-#If game in games: update game
-#       If game was not finished and is now finished push 'Game Ended sequence'
+def findAction(name):
+    name = findAction.pattern.sub('', name)
+    for action in actions:
+        if action.actionName == name:
+            return action
+    return None
+findAction.pattern = re.compile('[\W_]+')
 
+
+
+# Syntax: !cooldown <action> <time>
+def cooldown(bot, chan, nick, msg):
+    message = msg.strip().split(' ')
+    if len(message) < 3:
+        bot.msg(chan, '%s: Too few arguments.' % nick)
+        return
+    
+    action,time = message[1:3]
+    act = findAction(action)
+    
+    if not act:
+        bot.msg(chan, '%s: Unknown action: %s' % (nick,action))
+        return
+    try:
+        time = int(time)
+    except:
+        bot.msg(chan, '%s: Invalid time: %s', (nick, time))
+        return
+    
+    act.cooldown = time
+    bot.msg(chan, 'Cooldown set to %d seconds.' % time)
             
 class Action:
     pattern = re.compile('[\W_]+')
