@@ -237,7 +237,7 @@ class Game:
     def getSport(self):
         return self.sport
 
-    def __cmp__(self, other):
+    def __eq__(self, other):
                 if self.id == other.id:
                     #print 'COMPARE TRUE!'
                     return True
@@ -245,7 +245,7 @@ class Game:
                 return False
 
     def __repr__(self):
-        return '[%s] %s %s-%s %s %s %s %s %s %s' % (self.sport, self.homeTeam, self.sHome, self.sAway, self.awayTeam, self.status, self.startTime, self.network, self.dayOfWeek, self.winner)
+        return 'ID#: %s [%s] %s %s-%s %s %s %s %s %s %s' % (self.id, self.sport, self.homeTeam, self.sHome, self.sAway, self.awayTeam, self.status, self.startTime, self.network, self.dayOfWeek, self.winner)
         
 
 
@@ -373,11 +373,11 @@ def getNHLScores():
         #print newGame
 
         for oldGame in Games:
-            #print 'IDs: %s vs %s' % (game.gameID, newGame.gameID)
+            print 'IDs: %s vs %s' % (oldGame.id, newGame.id)
             if newGame == oldGame:
-                print 'GAME FOUND. REPLACING!'
-                print 'NewGame Status: %s' % newGame.status
-                print 'OldGame Status: %s' %oldGame.status
+                #print 'GAME FOUND. REPLACING!'
+                #print 'NewGame ID: %s Status: %s' % (newGame.id, newGame.status)
+                #print 'OldGame ID: %s Status: %s' % (oldGame.id, oldGame.status)
                 if 'FINAL' in newGame.status and not 'FINAL' in oldGame.status:
                     print 'GAME ENDED!'
                     #Need to still figure out how to pass the bot to this function to push to the channel the update
@@ -576,7 +576,7 @@ def updateAllScores():
     #Games = []
     getNHLScores()
     #getNFLScores()
-    reactor.callLater(120, updateAllScores)
+    reactor.callLater(30, updateAllScores)
 
 updateAllScores()
 
