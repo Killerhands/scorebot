@@ -39,31 +39,12 @@ class KenBot(irc.IRCClient):
             self._reconnect_deferred = None
             self._ping_deferred = reactor.callLater(self.factory.ping_interval, self._idle_ping)
 
-    def updateBracket(self, URL):
-        self.bracketURL = URL
-
-    def updateMatches(self, matches):
-        self.matchesToday = matches
-
-    def updateBroadcast(self, broadcast):
-        self.broadcastMsg = broadcast
-
-    def updateCasters(self, casters):
-        self.castersStr = casters
-
-    def updatePlayerTwit(self, players):
-        self.playerTwit = players
-
     def signedOn(self):
         self.join(self.factory.channel)
         self.active = True
         self.liveFlag = True
         self.admins = specialAdmins
-        self.bracketURL = bracketURL
-        self.matchesToday = matchesToday
-        self.broadcastMsg = broadcastMsg
-        self.castersStr = castersStr
-        self.playerTwit = playerTwit
+
         #task.LoopingCall(self.updateAdmins).start(120)
         print "Signed on as %s." % (self.nickname,)
     
