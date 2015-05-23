@@ -373,7 +373,7 @@ def getNHLScores():
         #print newGame
 
         for oldGame in Games:
-            print 'IDs: %s vs %s' % (oldGame.id, newGame.id)
+            #print 'IDs: %s vs %s' % (oldGame.id, newGame.id)
             if newGame == oldGame:
                 #print 'GAME FOUND. REPLACING!'
                 #print 'NewGame ID: %s Status: %s' % (newGame.id, newGame.status)
@@ -576,7 +576,7 @@ def updateAllScores():
     #Games = []
     getNHLScores()
     #getNFLScores()
-    reactor.callLater(30, updateAllScores)
+    reactor.callLater(120, updateAllScores)
 
 updateAllScores()
 
