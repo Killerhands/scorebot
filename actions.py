@@ -119,47 +119,47 @@ NFLTeams = {
     'oakland' : 'OAK',
     'oak' : 'OAK',
 
-    'rams' :'STL',
-    'st louis' : 'STL',
-    'stlouis' : 'STL',
-    'stl' : 'STL',
+    'rams': 'STL',
+    'st louis': 'STL',
+    'stlouis': 'STL',
+    'stl': 'STL',
 
-    'ravens' : 'BAL',
-    'baltimore' : 'BAL',
-    'bal' : 'BAL',
+    'ravens': 'BAL',
+    'baltimore': 'BAL',
+    'bal': 'BAL',
 
-    'redskins' : 'WAS',
-    'washington' : 'WAS',
-    'was' : 'WAS',
+    'redskins': 'WAS',
+    'washington': 'WAS',
+    'was': 'WAS',
 
-    'saints' : 'NO',
-    'new orleans' : 'NO',
-    'neworleans' : 'NO',
-    'no' : 'NO',
+    'saints': 'NO',
+    'new orleans': 'NO',
+    'neworleans': 'NO',
+    'no': 'NO',
 
-    'seahawks' : 'SEA',
-    'hawks' : 'SEA',
-    'seattle' : 'SEA',
-    'sea' : 'SEA',
+    'seahawks': 'SEA',
+    'hawks': 'SEA',
+    'seattle': 'SEA',
+    'sea': 'SEA',
 
-    'steelers' : 'PIT',
-    'stillers' : 'PIT',
-    'pittsburgh' : 'PIT',
-    'pitt' : 'PIT',
-    'pit' : 'PIT',
+    'steelers': 'PIT',
+    'stillers': 'PIT',
+    'pittsburgh': 'PIT',
+    'pitt': 'PIT',
+    'pit': 'PIT',
 
-    'texans' : 'HOU',
-    'houston' : 'HOU',
-    'hou' : 'hou',
+    'texans': 'HOU',
+    'houston': 'HOU',
+    'hou': 'hou',
 
-    'titans' : 'TEN',
-    'tennesee' : 'TEN',
-    'ten' : 'TEN',
+    'titans': 'TEN',
+    'tennesee': 'TEN',
+    'ten': 'TEN',
 
-    'vikings' : 'MIN',
-    'minnesota' : 'MIN',
-    'vikes' : 'MIN',
-    'min' : 'MIN',
+    'vikings': 'MIN',
+    'minnesota': 'MIN',
+    'vikes': 'MIN',
+    'min': 'MIN',
 }
 
 
@@ -246,7 +246,7 @@ class Game:
 
     def __repr__(self):
         return 'ID#: %s [%s] %s %s-%s %s %s %s %s %s %s' % (self.id, self.sport, self.homeTeam, self.sHome, self.sAway, self.awayTeam, self.status, self.startTime, self.network, self.dayOfWeek, self.winner)
-        
+
 
 
 
@@ -259,10 +259,11 @@ def GetLiveGames():
     for game in Games:
         if 'live' in game.status.lower():
             liveGames.append(game)
-        else:
-            if (game.sport == 'NFL' and 'final' not in game.status.lower()):
+        elif (game.sport == 'NFL' and 'final' not in game.status.lower()):
                 if 'pregame' not in game.status.lower():
                     liveGames.append(game)
+        elif (game.sport == 'NBA' and 'ET' not in game.status.upper() and 'FINAL' not in game.status.upper()):
+                liveGames.append(game)
 
     return liveGames
 
@@ -287,15 +288,15 @@ def postLiveGameStatus(bot, chan, nick, msg):
                 status = game.dayOfWeek
             else:
                 status = game.status
-            liveGameStr += '%s[%s] %s %s-%s %s %s' % (game.color, game.sport, game.homeTeam, game.sHome, game.sAway, game.awayTeam, status)
+            liveGameStr += '%s[%s] %s %s-%s %s [%s] ' % (game.color, game.sport, game.homeTeam, game.sHome, game.sAway, game.awayTeam, status)
     elif sport == 'NHL':
         for game in liveGames:
             if game.sport == 'NHL':
-                liveGameStr += '%s[%s] %s %s-%s %s %s %s' % (game.color, game.sport, game.homeTeam, game.sHome, game.sAway, game.awayTeam, game.dayOfWeek, game.network)
+                liveGameStr += '%s[%s] %s %s-%s %s [%s %s] ' % (game.color, game.sport, game.homeTeam, game.sHome, game.sAway, game.awayTeam, game.dayOfWeek, game.network)
     elif sport == 'NFL':
         for game in liveGames:
             if game.sport == 'NFL':
-                liveGameStr += '%s[%s] %s %s-%s %s %s' % (game.color, game.sport, game.homeTeam,game.sHome, game.sAway, game.awayTeam, game.status)
+                liveGameStr += '%s[%s] %s %s-%s %s [%s] ' % (game.color, game.sport, game.homeTeam, game.sHome, game.sAway, game.awayTeam, game.status)
 
     print liveGameStr
     bot.msg(chan, str(liveGameStr))
@@ -315,7 +316,8 @@ def postGameScores(bot, chan, nick, msg):
 
     if currentGame is not 'NFL':
         if currentGame is not 'NHL':
-            return
+            if currentGame is not 'NBA':
+                return
 
     for game in Games:
         if game.sport == currentGame:
@@ -346,7 +348,7 @@ def getNHLScores():
 
     for game in gameJson['games']:
         htWin = game['htc']
-        atWin = game['atc']
+        #atWin = game['atc']
         gameStatus = game['bs']
 
         if 'FINAL' in gameStatus.upper():
@@ -354,7 +356,7 @@ def getNHLScores():
                 winner = game['htv']
             else:
                 winner = game['atv']
-                
+
         newGame = Game(
             color = '\x0302',
             sport = 'NHL',
@@ -378,33 +380,127 @@ def getNHLScores():
                 #print 'GAME FOUND. REPLACING!'
                 #print 'NewGame ID: %s Status: %s' % (newGame.id, newGame.status)
                 #print 'OldGame ID: %s Status: %s' % (oldGame.id, oldGame.status)
-                if 'FINAL' in newGame.status and not 'FINAL' in oldGame.status:
+                if 'FINAL' in newGame.status and 'FINAL' not in oldGame.status:
                     print 'GAME ENDED!'
                     #Need to still figure out how to pass the bot to this function to push to the channel the update
                     #bot.msg(chan, '[GAME UPDATE!] %s[%s] %s %s-%s %s [%s %s]' % (newGame.color, newGame.sport, newGame.homeTeam, newGame.sHome, newGame.sAway, newGame.awayTeam, newGame.status, newGame.network))
-                
-                if not 'FINAL' in oldGame.status and 'LIVE' in newGame.status and not 'LIVE' in oldGame.status:
+
+                if 'FINAL' not in oldGame.status and 'LIVE' in newGame.status and 'LIVE' not in oldGame.status:
                     print 'GAME STARTED!'
                     #Need to still figure out how to pass the bot to this function to push to the channel the update
                     #bot.msg(chan, '[GAME UPDATE!] %s[%s] %s %s-%s %s [%s %s]' % (newGame.color, newGame.sport, newGame.homeTeam, newGame.sHome, newGame.sAway, newGame.awayTeam, newGame.status, newGame.network))
-                 
+
                 Games.remove(oldGame)
                 newGames.append(newGame)
                 replaced = True
             else:
                 replaced = False
                 Games.remove(oldGame)
-                
-        if replaced == True:
+
+        if replaced is True:
             return
         else:
             newGames.append(newGame)
-            
+
     for newGame in newGames:
         Games.append(newGame)
     #print Games
     print 'NHL Scores Updated!'
-                
+
+
+def getNBAScores():
+    global Games
+    for game in Games:
+        if game.sport == "NBA":
+            Games.remove(game)
+    league = 'nba'
+
+    scores = {}
+    STRIP = "()1234567890 "
+
+    #visit espn bottomline website to get scores as html page
+    url = 'http://sports.espn.go.com/'+league+'/bottomline/scores'
+    #url = "http://www.fuerstjh.com/test.html"
+    #req = urllib2.request.Request(url)
+    response = urllib2.urlopen(url)
+    page = response.read()
+
+    #url decode the page and split into list
+    data = urllib2.unquote(str(page)).split('&'+league+'_s_left')
+
+    #extract the important data
+    for i in range(1, len(data)):
+
+            #get rid of junk at beginning of line, remove ^ which marks team with ball
+            main_str = data[i][data[i].find('=')+1:].replace('^', '')
+
+            #extract time, you can use the ( and ) to find time in string
+            time = main_str[main_str.rfind('('):main_str.rfind(')')+1].strip()
+
+            #extract score, it should be at start of line and go to the first (
+            score = main_str[0:main_str.rfind('(')].strip()
+
+            #extract espn gameID use the keyword gameId to find it
+            gameID = main_str[main_str.rfind('gameId')+7:].strip()
+
+            if gameID == '':
+                    #something wrong happened
+                    continue
+
+            #split score string into each teams string
+            hTeam = ''
+            sHome = '0'
+            aTeam = ''
+            sAway = '0'
+
+            if (' at ' not in score):
+                    teams = score.split('  ')
+                    hTeam = teams[0][0:teams[0].rfind(' ')].lstrip(STRIP)
+                    aTeam = teams[1][0:teams[1].rfind(' ')].lstrip(STRIP)
+                    sHome = teams[0][teams[0].rfind(' ')+1:].strip()
+                    sAway = teams[1][teams[1].rfind(' ')+1:].strip()
+            else:
+                    teams = score.split(' at ')
+                    hTeam = teams[0].lstrip(STRIP)
+                    aTeam = teams[1].lstrip(STRIP)
+
+            #add to return dictionary
+
+            scores[gameID] = ['', '', '', '', '']
+            scores[gameID][0] = hTeam
+            scores[gameID][1] = sHome
+            scores[gameID][2] = aTeam
+            scores[gameID][3] = sAway
+            scores[gameID][4] = time
+            #print scores[gameID]
+
+            if sHome > sAway:
+                winner = hTeam
+            elif sHome < sAway:
+                winner = aTeam
+            else:
+                winner = 'N/A'
+
+            newGame = Game(
+                color = '\x0304',
+                sport = 'NBA',
+                gameID = gameID, 
+                hTeam = hTeam.upper(), 
+                aTeam = aTeam.upper(),
+                sHome = sHome,
+                sAway = sAway,
+                status = time[1:-1],
+                startTime = time[1:-1],
+                dayOfWeek = time[1:-1],
+                winner = winner.upper(),
+                 )
+
+            Games.append(newGame)
+            #print newGame
+            #print newGame.awayTeam
+    print 'NBA Scores Updated!'
+    #return NBLGameArray
+
 
 def getNFLScores():
     global Games
@@ -479,18 +575,19 @@ def returnGameStatus(bot, chan, nick, msg):
     global Games
     global NFLTeams
     global NHLTeams
+    global NBATeams
     global weekDay
 
     gameFound = None
     msg = msg.split(' ')
     print msg
-    if len(msg) > 3:
-        bot.msg(chan, 'invalid arguments. Try \'!score <team> <team>\' or \'!score <team>\'')
+    #if len(msg) > 3:
+    #    bot.msg(chan, 'invalid arguments. Try \'!score <team> <team>\' or \'!score <team>\'')
 
     if len(msg) == 3:
         sport = msg[1].lower()
         print 'sport' % sport
-        teamOne = msg[2].lower()
+        teamOne = msg[2:].lower()
         print 'teamOne %s' % teamOne
 
         if sport == 'nfl' and teamOne in NFLTeams:
@@ -498,6 +595,9 @@ def returnGameStatus(bot, chan, nick, msg):
 
 
         if sport == 'nhl' and teamOne in NHLTeams:
+            teamOne = NHLTeams[teamOne]
+
+        if sport == 'nba' and teamOne in NBATeams:
             teamOne = NHLTeams[teamOne]
 
 
@@ -510,10 +610,12 @@ def returnGameStatus(bot, chan, nick, msg):
         teamOne = msg[1].lower()
         print 'teamOne %s' % teamOne
 
-        if teamOne in NFLTeams:
-            teamOne = NFLTeams[teamOne]
-        elif teamOne in NHLTeams:
+        #if teamOne in NFLTeams:
+        #    teamOne = NFLTeams[teamOne]
+        if teamOne in NHLTeams:
             teamOne = NHLTeams[teamOne]
+        elif teamOne in NBATeams:
+            teamOne = NBATeams[teamOne]
 
         for game in Games:
             if game.homeTeam.upper() == teamOne.upper() or game.awayTeam.upper() == teamOne.upper():
@@ -553,7 +655,7 @@ def returnNextGame(bot, chan, nick, msg):
 
         for game in Games:
             if game.homeTeam.upper() == teamOne or game.awayTeam.upper() == teamOne:
-                if not 'FINAL' in game.status and not 'LIVE' in game.status:
+                if 'FINAL' not in game.status and 'LIVE' not in game.status:
                     nextGames.append(game)
                     #Only returning one game for now, might expand to more
                     break
@@ -566,9 +668,7 @@ def returnNextGame(bot, chan, nick, msg):
             #print gameFound.status
             gameString += '%s[%s] %s %s-%s %s [%s %s %s] ' % (gameFound.color, gameFound.sport, gameFound.homeTeam, gameFound.sHome, gameFound.sAway, gameFound.awayTeam, gameFound.dayOfWeek, gameFound.status, gameFound.network)
             #print gameString
-        bot.msg(chan, str(gameString))
-            
-
+        bot.msg(chan, str(gameString))    
 
 
 def updateAllScores():
@@ -576,6 +676,7 @@ def updateAllScores():
     #Games = []
     getNHLScores()
     #getNFLScores()
+    getNBAScores()
     reactor.callLater(120, updateAllScores)
 
 updateAllScores()
@@ -602,24 +703,26 @@ def cooldown(bot, chan, nick, msg):
     if len(message) < 3:
         bot.msg(chan, '%s: Too few arguments.' % nick)
         return
-    
-    action,time = message[1:3]
+
+    action, time = message[1:3]
     act = findAction(action)
-    
+
     if not act:
-        bot.msg(chan, '%s: Unknown action: %s' % (nick,action))
+        bot.msg(chan, '%s: Unknown action: %s' % (nick, action))
         return
     try:
         time = int(time)
     except:
         bot.msg(chan, '%s: Invalid time: %s', (nick, time))
         return
-    
+
     act.cooldown = time
     bot.msg(chan, 'Cooldown set to %d seconds.' % time)
-            
+
+
 class Action:
     pattern = re.compile('[\W_]+')
+
     def __init__(self, trigger='', response=[], admin=False, active=True, question=False, extAction=None, cooldown=0, whiteList=[], blackList=[], orTriggers=[], andTriggers=[]):
         self.trigger = trigger
         self.admin = admin
@@ -632,12 +735,12 @@ class Action:
         self.blackList = blackList
         self.orTriggers = orTriggers
         self.andTriggers = andTriggers
-        
+
         self.lastUsed = 0
-        
+
         tmp = trigger if trigger else orTriggers[0] if orTriggers else andTriggers[0]
         self.actionName = Action.pattern.sub('', tmp.lower())
-    
+
     def matchTrigger(self, msg):
         if self.trigger[0] == '!' and msg[0] == '!':
             return self.trigger and self.trigger in msg
@@ -646,25 +749,25 @@ class Action:
                 return False
             else:
                 return self.trigger and self.trigger in msg
-    
+
     def matchATriggers(self, msg):
         if not self.andTriggers:
             return False
-        
+
         for trigger in self.andTriggers:
             if trigger not in msg:
                 return False
         return True
-    
+
     def matchOTriggers(self, msg):
         if not self.orTriggers:
             return False
-        
+
         for trigger in self.orTriggers:
             if trigger in msg:
                 return True
         return False
-    
+
     def shouldAct(self, nick, msg, bot):
         if self.active != bot.active:
             return False
@@ -681,11 +784,11 @@ class Action:
         if not self.matchTrigger(msg) and not self.matchATriggers(msg) and not self.matchOTriggers(msg):
             return False
         return True
-    
+
     def act(self, chan, nick, msg, bot):
         if not self.shouldAct(nick, msg, bot):
             return False
-        
+
         self.lastUsed = time()
         if self.extAction:
             argc = len(inspect.getargspec(self.extAction)[0])
@@ -700,18 +803,18 @@ class Action:
         else:
             for line in self.response:
                 bot.msg(chan, line.format(nick))
-        return True    
+        return True
 
 actions = (
     Action('!activate', ['\x01ACTION bot ACTIVATED BloodTrail '],
         admin = True,
         active = False,
         extAction = lambda bot: setattr(bot, 'active', True)),
-    
+
     Action('!deactivate', 'bot Deactivated by {0}',
         admin = True,
         extAction = lambda bot: setattr(bot, 'active', False)),
-    
+
     Action('!time',
         extAction = lambda bot, chan: bot.msg(chan, asctime(localtime()))),
 
