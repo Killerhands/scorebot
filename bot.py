@@ -20,11 +20,11 @@ specialAdmins = [
 
 
 class KenBot(irc.IRCClient):
-    
+
     def _get_nickname(self):
         return self.factory.nickname
     nickname = property(_get_nickname)
-    
+
     #TODO: Are these essential?
     def _idle_ping(self):
         self.factory.log.log(logging.DEBUG - 5, 'Sending idle PING')
@@ -127,5 +127,5 @@ from twisted.internet import reactor
 if __name__ == "__main__":
     log.startLogging(sys.stdout)
     chan = sys.argv[1]
-    reactor.connectTCP('irc.us.quakenet.org', 6667, KenBotFactory('#' + chan))
+    reactor.connectTCP('irc.uk.quakenet.org', 6667, KenBotFactory('#' + chan))
     reactor.run()

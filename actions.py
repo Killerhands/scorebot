@@ -53,10 +53,10 @@ NFLTeams = {
     'cards' : 'ARZ',
     'arz' : 'ARZ',
 
-    'chargers' : 'SD',
-    'san diego' : 'SD',
-    'sandiego' : 'SD',
-    'sd' : 'SD',
+    'chargers' : 'LAC',
+    'san diego' : 'LAC',
+    'sandiego' : 'LAC',
+    'sd' : 'LAC',
 
     'chiefs' : 'KC',
     'kansas city' : 'KC',
@@ -119,10 +119,10 @@ NFLTeams = {
     'oakland' : 'OAK',
     'oak' : 'OAK',
 
-    'rams': 'STL',
-    'st louis': 'STL',
-    'stlouis': 'STL',
-    'stl': 'STL',
+    'rams': 'LA',
+    'st louis': 'LA',
+    'stlouis': 'LA',
+    'stl': 'LA',
 
     'ravens': 'BAL',
     'baltimore': 'BAL',
@@ -264,6 +264,7 @@ def GetLiveGames():
                     liveGames.append(game)
         elif (game.sport == 'NBA' and 'ET' not in game.status.upper() and 'FINAL' not in game.status.upper()):
                 liveGames.append(game)
+    print liveGames
 
     return liveGames
 
@@ -280,7 +281,7 @@ def postLiveGameStatus(bot, chan, nick, msg):
     except:
         sport = 'ALL'
 
-    liveGameStr = 'Live Games: '
+    liveGameStr = '\x02Live Games: \x0F'
 
     if sport == 'ALL':
         for game in liveGames:
@@ -294,9 +295,10 @@ def postLiveGameStatus(bot, chan, nick, msg):
             if game.sport == 'NHL':
                 liveGameStr += '%s[%s] %s %s-%s %s [%s %s] ' % (game.color, game.sport, game.homeTeam, game.sHome, game.sAway, game.awayTeam, game.dayOfWeek, game.network)
     elif sport == 'NFL':
+        liveGameStr += '\x0304<NFL> \x0F\x0304'
         for game in liveGames:
             if game.sport == 'NFL':
-                liveGameStr += '%s[%s] %s %s-%s %s [%s] ' % (game.color, game.sport, game.homeTeam, game.sHome, game.sAway, game.awayTeam, game.status)
+                liveGameStr += '| %s%s %s-%s %s [%s] ' % (game.color, game.homeTeam, game.sHome, game.sAway, game.awayTeam, game.status)
 
     print liveGameStr
     bot.msg(chan, str(liveGameStr))
@@ -350,12 +352,15 @@ def getNHLScores():
         htWin = game['htc']
         #atWin = game['atc']
         gameStatus = game['bs']
+        winner = ''
 
         if 'FINAL' in gameStatus.upper():
             if htWin == '':
                 winner = game['htv']
             else:
                 winner = game['atv']
+        else:
+            winner = None;
 
         newGame = Game(
             color = '\x0302',
@@ -504,9 +509,11 @@ def getNBAScores():
 
 def getNFLScores():
     global Games
-    for game in Games:
-        if game.sport == "NFL":
-            Games.remove(game)
+    Games[:] = []
+    #print 'Current NFL Games: %s' % Games
+    #for game in Games:
+    #    if game.sport == "NFL":
+    #        Games.remove(game)
 
     NFLFeed = urllib2.urlopen('http://www.nfl.com/liveupdate/scorestrip/scorestrip.json')
     #Parse into Json
@@ -517,13 +524,11 @@ def getNFLScores():
 
     for game in gameJson:
         game = game.split(',')
-
-    for game in gameJson:
-        game = game.split(',')
         hTeam = game[4].strip('"')
         aTeam = game[6].strip('"')
         sHome = game[5].strip('"')
         sAway = game[7].strip('"')
+        gID = game[10].strip('"')
 
         if sHome == '':
             sHome = 0
@@ -545,7 +550,7 @@ def getNFLScores():
         newGame = Game(
             color = '\x0304',
             sport = 'NFL',
-            gameID = 0, 
+            gameID = gID, 
             hTeam = hTeam, 
             aTeam = aTeam,
             sHome = sHome,
@@ -558,7 +563,10 @@ def getNFLScores():
 
         Games.append(newGame)
 
-    return NFLGameArray
+    print 'NFL Scores Updated!'
+    #print 'Updated NFL Games: %s' % Games
+
+    #return NFLGameArray
 
 weekDay = [ 
     'MONDAY',
@@ -590,14 +598,15 @@ def returnGameStatus(bot, chan, nick, msg):
         teamOne = msg[2:].lower()
         print 'teamOne %s' % teamOne
 
-        if sport == 'nfl' and teamOne in NFLTeams:
+        if sport == 'nfl' and teamOne.lower() in NFLTeams:
             teamOne = NFLTeams[teamOne]
+            prn
 
 
-        if sport == 'nhl' and teamOne in NHLTeams:
+        if sport == 'nhl' and teamOne.lower() in NHLTeams:
             teamOne = NHLTeams[teamOne]
 
-        if sport == 'nba' and teamOne in NBATeams:
+        if sport == 'nba' and teamOne.lower() in NBATeams:
             teamOne = NHLTeams[teamOne]
 
 
@@ -610,8 +619,8 @@ def returnGameStatus(bot, chan, nick, msg):
         teamOne = msg[1].lower()
         print 'teamOne %s' % teamOne
 
-        #if teamOne in NFLTeams:
-        #    teamOne = NFLTeams[teamOne]
+        if teamOne in NFLTeams:
+            teamOne = NFLTeams[teamOne]
         if teamOne in NHLTeams:
             teamOne = NHLTeams[teamOne]
         elif teamOne in NBATeams:
@@ -674,9 +683,9 @@ def returnNextGame(bot, chan, nick, msg):
 def updateAllScores():
     global Games
     #Games = []
-    getNHLScores()
-    #getNFLScores()
-    getNBAScores()
+    #getNHLScores()
+    getNFLScores()
+    #getNBAScores()
     reactor.callLater(120, updateAllScores)
 
 updateAllScores()
@@ -829,4 +838,8 @@ actions = (
     Action('!next',
         cooldown=10,
         extAction = returnNextGame),
+
+    Action('!rehash',
+        admin=True,
+        extAction = rehashCmd),
     )
